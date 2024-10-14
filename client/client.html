@@ -5,7 +5,136 @@
   <link rel="stylesheet" type="text/css" href="/style.css">
   
   <script>
+    //Handle response takes in the response object (from our fetch request), and 
+    //a boolean of if we should parse the response or not (since head requests have
+    //no actual response). It is marked as async because we will use await.
+    const handleResponse = async (response, parseResponse) => {
+      //Grab the content section so that we can write to it
+      const content = document.querySelector('#content');
 
+      //Based on the status of the response, write something.
+      switch(response.status) {
+        case 200: 
+          content.innerHTML = `<b>Success</b>`;
+          break;
+        case 201:
+          content.innerHTML = `<b>Created</b>`;
+          break;
+        case 204:
+          content.innerHTML = `<b>Updated (No Content)</b>`;
+          break;
+        case 400: 
+          content.innerHTML = `<b>Bad Request</b>`;
+          break;
+        case 401:
+          content.innerHTML = `<b>Unauthorized</b>`;
+          break;
+        case 403:
+          content.innerHTML = `<b>Forbidden</b>`;
+          break;
+        case 500:
+          content.innerHTML = `<b>Internal Server Error</b>`;
+          break;
+        case 501:
+          content.innerHTML = `<b>Not Implemented</b>`;
+          break;
+        case 404:
+          content.innerHTML = `<b>Resource Not Found</b>`;
+          break;
+        default: 
+          content.innerHTML = `Error code not implemented by client.`;
+          break;
+      }
+
+      //If we should parse a response (meaning we didn't make a head request)
+      if(parseResponse !== 'head' && response.status !== 204) {
+        let obj = await response.json();
+    
+        let jsonResponse = JSON.stringify(obj);
+        console.log(jsonResponse);
+        //To display the data easily, we will just stringify it again and display it.
+        content.innerHTML += `<p>${JSON.stringify(Object.entries(obj)[0][1])}</p>`;
+      }
+    };
+
+    const sendPost = async (nameForm) => {
+      const url = nameForm.getAttribute('action');
+      const method = nameForm.getAttribute('method');
+      const nameField = nameForm.querySelector('#nameField');
+      const ageField = nameForm.querySelector('#ageField');
+
+      //Build a data string in the FORM-URLENCODED format.
+      const formData = `name=${nameField.value}&age=${ageField.value}`;
+
+      //Make a fetch request and await a response. Set the method to
+      //the one provided by the form (POST). Set the headers. Content-Type
+      //is the type of data we are sending. Accept is the data we would like
+      //in response. Then add our FORM-URLENCODED string as the body of the request.
+      let response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: formData,
+      });
+
+      handleResponse(response, 'post');
+    };
+
+    const sendGet = async (userForm) => {
+      const url = userForm.getAttribute('action');
+      const method = userForm.getAttribute('method');
+      const urlField = userForm.querySelector('#urlField');
+      const methodSelect = userForm.querySelector('#methodSelect');
+
+      //Make a fetch request and await a response.
+      let response = await fetch(url, {
+        method: method,
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      handleResponse(response, method);
+    }
+
+    const init = () => {
+      //Grab the form
+      const nameForm = document.querySelector('#nameForm');
+      const userForm = document.querySelector('#userForm');
+      
+      const addUser = (e) => {
+        e.preventDefault();
+        sendPost(nameForm);
+        return false;
+      }
+
+      const getUser = (e) => {
+        e.preventDefault();
+        sendGet(userForm);
+        return false;
+      }
+      
+      //Call addUser when the submit event fires on the form.
+      nameForm.addEventListener('submit', addUser);
+      userForm.addEventListener('submit', getUser);
+      const urlField = document.querySelector('#urlField');
+      const methodSelect = document.querySelector('#methodSelect');
+      
+      urlField.addEventListener('change', function() {
+        userForm.action = urlField.value;
+        userForm.method = methodSelect.value;
+        console.log(urlField.value)
+      })
+      methodSelect.addEventListener('change', function() {
+        userForm.action = urlField.value;
+        userForm.method = methodSelect.value;
+        console.log(methodSelect.value)
+      })
+    }
+
+    window.onload = init;
   </script>
 </head>
 <body>
